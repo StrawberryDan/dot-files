@@ -60,6 +60,15 @@
   :config
   (spacious-padding-mode 1))
 
+(use-package claude-code-ide
+  :ensure t
+  :after vterm
+  :vc (:url "https://github.com/manzaltu/claude-code-ide.el" :rev :newest)
+  :config
+  (setq claude-code-ide-terminal-backend 'eat)
+  (claude-code-ide-emacs-tools-setup)
+  (setq claude-code-ide-prevent-reflow-glitch nil))
+
 (use-package simple-modeline
   :ensure t
   :init (simple-modeline-mode))
