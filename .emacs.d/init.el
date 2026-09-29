@@ -60,15 +60,6 @@
   :config
   (spacious-padding-mode 1))
 
-(use-package claude-code-ide
-  :ensure t
-  :after vterm
-  :vc (:url "https://github.com/manzaltu/claude-code-ide.el" :rev :newest)
-  :config
-  (setq claude-code-ide-terminal-backend 'eat)
-  (claude-code-ide-emacs-tools-setup)
-  (setq claude-code-ide-prevent-reflow-glitch nil))
-
 (use-package simple-modeline
   :ensure t
   :init (simple-modeline-mode))
@@ -146,3 +137,19 @@
 (add-hook 'prog-mode-hook (lambda ()
 			    (setq truncate-lines t
 				  truncate-partial-width-windows nil)))
+
+
+(defconst my/help-buffer-list
+  '(help-mode Man-mode Info-mode))
+(defun my/help-buffer-p (buf _action)
+  (with-current-buffer buf
+    (derived-mode-p my/help-buffer-list)))
+
+
+(setq display-buffer-alist
+      `(("\\*claude-code"
+         . ((display-buffer-in-side-window)
+            . ((side . right) (slot . 1) (window-width . 0.25))))
+        (my/help-buffer-p
+         . ((display-buffer-in-side-window display-buffer-reuse-mode-window)
+            . ((side . right) (slot . 0) (window-width . 0.25) (mode . ,my/help-buffer-list))))))
