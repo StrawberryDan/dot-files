@@ -16,7 +16,9 @@
 
 (use-package exec-path-from-shell
   :ensure t
-  :init (exec-path-from-shell-initialize))
+  :init
+  (when (memq window-system '(x ns pgtk))
+    (exec-path-from-shell-initialize)))
 
 (use-package dimmer
   :ensure t
@@ -89,6 +91,7 @@
   :hook
   ((c-mode c-ts-mode c++-mode c++-ts-mode) . eglot-ensure)
   :custom
+  (eglot-server-programs '(((c-mode c++-mode c-ts-mode c++-ts-mode) . ("clangd"))))
   (eglot-ignored-server-capabilities '(:documentOnTypeFormattingProvider)))
 
 (use-package corfu
@@ -140,12 +143,13 @@
 
 (setq whitespace-line-column 120)
 (setq whitespace-style '(face trailing lines-tail newline space-mark tab-mark newline-mark))
-(global-whitespace-mode 1)
 
 
 (add-hook 'prog-mode-hook (lambda ()
-			    (setq truncate-lines t
-				  truncate-partial-width-windows nil)))
+                            (whitespace-mode 1)
+                            (indent-tabs-mode -1)
+                            (setq truncate-lines t
+                                  truncate-partial-width-windows nil)))
 
 
 (defconst my/help-buffer-list
