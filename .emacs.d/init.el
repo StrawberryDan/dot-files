@@ -72,7 +72,10 @@
             . ((display-buffer-in-side-window
                 display-buffer-reuse-mode-window)
                . ((side . right) (slot . 0) (window-width . 0.25)
-                  (mode . ,my/help-buffer-list)))) ))
+                  (mode . ,my/help-buffer-list))))
+           ((derived-mode compilation-mode)
+            (display-buffer-in-side-window display-buffer-reuse-window)
+            (side . bottom) (slot . -1) (window-height . 20) (mode . compilation-mode)) ))
   ;; I don't like tabs
   (setq-default indent-tabs-mode nil)
   :config
