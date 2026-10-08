@@ -82,6 +82,10 @@
   ;; I don't like tabs
   (setq-default indent-tabs-mode nil)
 
+  ;; Configure compile mode
+  (setq compilation-scroll-output 'first-error
+        compilation-skip-threshold 2)
+
   :config
   (global-display-line-numbers-mode 1)
   ;; Enable auto pairing
