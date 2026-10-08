@@ -318,6 +318,9 @@
                                      my/eat-terminfo-directory source))
           (message "eat: failed to compile terminfo from %s" source)))))
   :config
+  (add-to-list 'display-buffer-alist
+               '((derived-mode eat-mode) (display-buffer-in-side-window display-buffer-reuse-mode-window)
+                 (side . bottom) (slot . 1) (window-height . 20) (mode . eat-mode)))
   (when (eq system-type 'darwin)
     (my/eat-compile-terminfo)
     (setq eat-term-terminfo-directory my/eat-terminfo-directory)))
