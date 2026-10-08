@@ -276,7 +276,11 @@
 (use-package magit
   :ensure t
   :config
-  (setq magit-display-buffer-function 'display-buffer))
+  (setq magit-display-buffer-function 'display-buffer)
+  (add-to-list 'display-buffer-alist
+               '((derived-mode magit-status-mode)
+                 (display-buffer-in-side-window display-buffer-reuse-mode-window)
+                 (side . left) (slot . 0) (window-width . 0.33) (mode . magit-status-mode))))
 
 
 (use-package expreg
