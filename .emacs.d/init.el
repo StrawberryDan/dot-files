@@ -108,6 +108,7 @@
     (setq treesit-simple-indent-override-rules
           '((cpp
              ((n-p-gp "declaration_list" "namespace_definition" nil) parent 0)
+             ((n-p-gp "}" "declaration_list" "namespace_definition") parent 0)
              ((n-p-gp nil "declaration_list" "namespace_definition") grand-parent c-ts-indent-offset)))))
   :config
   (setq treesit-language-source-alist
