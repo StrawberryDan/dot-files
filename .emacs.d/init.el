@@ -2,7 +2,7 @@
 
 
 ;;==========================================================
-;;
+;; Emacs Base Configuration
 ;;==========================================================
 (use-package emacs
   :preface
@@ -10,7 +10,9 @@
     '(help-mode Man-mode Info-mode))
   (defun my/help-buffer-p (buf _action)
     (with-current-buffer buf
-      (derived-mode-p my/help-buffer-list)))
+      (or
+       (derived-mode-p my/help-buffer-list)
+       (string-match "\\*Man.*?\\*" buf))))
   (defun my/prog-mode-hook ()
     (whitespace-mode 1)
     (setq-local truncate-lines t))
@@ -35,9 +37,14 @@
     :doc "Mark Commands"
     :prefix t
     "b" #'mark-whole-buffer)
-  (keymap-global-set "C-c m" my/mark-map)
+
 
   :init
+  ;; Setup keybindings
+  (keymap-global-set "C-c m" my/mark-map)
+  ;; Put F9 to C-c for additional invoke.
+  (keymap-set key-translation-map "<f9>" "C-c")
+
   ;; Setup a custom file to store local customizations from customize commands.
   (setq custom-file (locate-user-emacs-file "custom.el"))
   (unless (file-exists-p custom-file)
@@ -61,14 +68,13 @@
         hscroll-margin        8)
   ;; Setup display buffer alist
   (setq display-buffer-alist
-        `( ("\\*claude-code"
-            . ((display-buffer-in-side-window)
-               . ((side . right) (slot . 1) (window-width . 0.25))))
-           (my/help-buffer-p
+        `( (my/help-buffer-p
             . ((display-buffer-in-side-window
                 display-buffer-reuse-mode-window)
                . ((side . right) (slot . 0) (window-width . 0.25)
                   (mode . ,my/help-buffer-list)))) ))
+  ;; I don't like tabs
+  (setq-default indent-tabs-mode nil)
   :config
   (global-display-line-numbers-mode 1)
   ;; Enable auto pairing
@@ -77,12 +83,140 @@
   (savehist-mode 1)
   ;; Enable default windmove bindings.
   (windmove-default-keybindings)
-  ;; I don't like tabs
-  (indent-tabs-mode -1)
 
   (repeat-mode +1)
   :hook
   ( (prog-mode . my/prog-mode-hook) ))
+
+
+(when (memq system-type '(darwin gnu gnu/linux gnu/freebsd))
+  (use-package exec-path-from-shell
+    :ensure t
+    :demand t
+    :config
+    (exec-path-from-shell-initialize)))
+
+
+;;==========================================================
+;; Language Support
+;;==========================================================
+(use-package treesit
+  :ensure nil
+  :demand t
+  :preface
+  (defun my/treesit-c++-indent-override-rules ()
+    (setq treesit-simple-indent-override-rules
+          '((cpp
+             ((n-p-gp "declaration_list" "namespace_definition" nil) parent 0)
+             ((n-p-gp nil "declaration_list" "namespace_definition") grand-parent c-ts-indent-offset)))))
+  :config
+  (setq treesit-language-source-alist
+        '((cpp "https://github.com/tree-sitter/tree-sitter-cpp")
+          (c   "https://github.com/tree-sitter/tree-sitter-c")))
+  (dolist (map '((c-mode   . c-ts-mode)
+                 (c++-mode . c++-ts-mode)))
+    (add-to-list 'major-mode-remap-alist map))
+  (setq c-ts-indent-offset 4)
+  (setq c-ts-mode-indent-style 'bsd)
+  :hook (c++-ts-mode . my/treesit-c++-indent-override-rules))
+
+
+(use-package eglot
+  :ensure nil
+  :demand t
+  :hook
+  ((c-mode c-ts-mode c++-mode c++-ts-mode) . eglot-ensure)
+  :custom
+  (eglot-server-programs '(((c-mode c++-mode c-ts-mode c++-ts-mode) . ("clangd"))))
+  (eglot-ignored-server-capabilities '(:documentOnTypeFormattingProvider)))
+
+
+;;==========================================================
+;; Navigation
+;;==========================================================
+(use-package winner
+  :ensure nil
+  :init
+  (winner-mode 1))
+
+
+(use-package avy
+  :ensure t
+  :demand t
+  :bind
+  ( :map my/goto-map
+    ("g" . avy-goto-char-timer)
+    ("L" . avy-goto-line)
+    ("w" . avy-goto-word-1)))
+
+(use-package ace-window
+  :ensure t
+  :config
+  (setq aw-keys '(?a ?s ?d ?f ?j ?k ?l ?l)
+        aw-dispatch-alist '((?m aw-swap-window "Swap")
+                            (?M aw-move-window "Move")
+                            (?x aw-delete-window "Kill")
+                            (?? aw-show-dispatch-help)))
+  :bind
+  (("C-c w" . ace-window)))
+
+
+(use-package orderless
+  :ensure t
+  :after cape
+  :custom
+  ( completion-styles '(orderless) )
+  ( completion-category-defaults nil )
+  ( orderless-matching-styles '(orderless-literal orderless-regexp orderless-prefixes )))
+
+
+(use-package consult
+  :ensure t
+  :bind
+  ( :map my/goto-map
+    ("l" . consult-line) ))
+
+
+(use-package consult-imenu
+  :bind
+  ( :map my/goto-map
+    ("f" . consult-imenu) ))
+
+
+(use-package consult-eglot
+  :ensure t
+  :bind
+  ( :map my/find-map
+    ("s" . consult-eglot-symbols)))
+
+
+(use-package affe
+  :ensure t
+  :bind
+  ( :map my/find-map
+    ("f" . affe-find)
+    ("F" . affe-grep)))
+
+
+(use-package dirvish
+  :ensure t
+  :config
+  (dirvish-override-dired-mode))
+
+
+;;==========================================================
+;; Appearence
+;;==========================================================
+(use-package spacious-padding
+  :ensure t
+  :custom
+  (spacious-padding-widths
+   '( :internal-border-width 4
+      :right-divider-width 4
+      :mode-line-width 4))
+  (spacious-padding-subtle-mode-line t)
+  :config
+  (spacious-padding-mode 1))
 
 
 (use-package darcula-theme
@@ -101,81 +235,24 @@
   (enable-theme 'darcula))
 
 
-(when (memq system-type '(darwin gnu gnu/linux gnu/freebsd))
-  (use-package exec-path-from-shell
-    :ensure t
-    :demand t
-    :config
-    (exec-path-from-shell-initialize)))
-
-
-(use-package vterm
-  :ensure t)
-
-
-(use-package claude-code-ide
-  :ensure t
-  :after vterm
-  :vc (:url "https://github.com/manzaltu/claude-code-ide.el" :rev :newest)
-  :config
-  (claude-code-ide-emacs-tools-setup)
-  (setq claude-code-ide-terminal-backend 'vterm))
-
-(use-package treesit
-  :ensure nil
-  :preface
-  (defun my/treesit-c++-indent-override-rules ()
-  (setq treesit-simple-indent-override-rules
-		'((cpp
-		   ((n-p-gp "declaration_list" "namespace_definition" nil) parent 0)
-		   ((n-p-gp nil "declaration_list" "namespace_definition") grand-parent c-ts-indent-offset)))))
-  :config
-  (setq treesit-language-source-alist
-        '((cpp "https://github.com/tree-sitter/tree-sitter-cpp")
-          (c   "https://github.com/tree-sitter/tree-sitter-c")))
-  (dolist (map '((c-mode   . c-ts-mode)
-                 (c++-mode . c++-ts-mode)))
-    (add-to-list 'major-mode-remap-alist map))
-  (setq c-ts-indent-offset 4)
-  (setq c-ts-mode-indent-style 'bsd)
-  :hook (c++-ts-mode . my/treesit-c++-indent-override-rules))
-
-(use-package spacious-padding
-  :ensure t
-  :custom
-  (spacious-padding-widths
-   '( :internal-border-width 4
-      :right-divider-width 4
-      :mode-line-width 4))
-  (spacious-padding-subtle-mode-line t)
-  :config
-  (spacious-padding-mode 1))
-
-
+;;==========================================================
+;; Competion
+;;==========================================================
 (use-package cape
   :ensure t)
 
-
-(use-package magit
-  :ensure t)
 
 (use-package vertico
   :ensure t
   :config
   (vertico-mode 1))
 
-(use-package eat
-  :ensure t)
 
-(use-package eglot
-  :ensure nil
-  :demand t
-  :hook
-  ((c-mode c-ts-mode c++-mode c++-ts-mode) . eglot-ensure)
-  :custom
-  (eglot-server-programs '(((c-mode c++-mode c-ts-mode c++-ts-mode) . ("clangd"))))
-  (eglot-ignored-server-capabilities '(:documentOnTypeFormattingProvider))
-  )
+(use-package marginalia
+  :ensure t
+  :config
+  (marginalia-mode 1))
+
 
 (use-package corfu
   :ensure t
@@ -192,32 +269,14 @@
     (eval-expression-minibuffer-setup . corfu-mode) ))
 
 
-(use-package dirvish
+;;==========================================================
+;; Programming
+;;==========================================================
+(use-package magit
   :ensure t
   :config
-  (dirvish-override-dired-mode))
+  (setq magit-display-buffer-function 'display-buffer))
 
-(use-package orderless
-  :ensure t
-  :after cape
-  :custom
-  ( completion-styles '(orderless) )
-  ( completion-category-defaults nil )
-  ( orderless-matching-styles '(orderless-literal orderless-regexp orderless-prefixes )))
-
-(use-package consult
-  :ensure t
-  :bind
-  ( :map my/goto-map
-    ("l" . consult-line) ))
-
-(use-package consult-imenu
-  :bind
-  ( :map my/goto-map
-    ("f" . consult-imenu) ))
-
-(use-package affe
-  :ensure t)
 
 (use-package expreg
   :ensure t
@@ -228,5 +287,34 @@
     :repeat-map my/mark-map-repeat
     ("e" . expreg-expand)
     ("E" . expreg-contract) ))
+
+
+;;==========================================================
+;; Terminal Emulator
+;;==========================================================
+(use-package eat
+  :ensure t
+  :preface
+  ;; Eat's bundled terminfo is compiled by a newer ncurses than macOS ships,
+  ;; so eat-truecolor/eat-256color are unreadable and zsh treats the terminal
+  ;; as unknown (e.g. backspace prints a space).  Recompile with the system tic.
+  (defvar my/eat-terminfo-directory
+    (expand-file-name "eat-terminfo" user-emacs-directory))
+  (defun my/eat-compile-terminfo ()
+    "Compile eat.ti with the system tic when missing or out of date."
+    (let ((source (expand-file-name "eat.ti"
+                                    (file-name-directory (locate-library "eat"))))
+          (target (expand-file-name "65/eat-truecolor" my/eat-terminfo-directory)))
+      (when (and (file-exists-p source)
+                 (executable-find "tic")
+                 (file-newer-than-file-p source target))
+        (make-directory my/eat-terminfo-directory t)
+        (unless (zerop (call-process "tic" nil nil nil "-x" "-o"
+                                     my/eat-terminfo-directory source))
+          (message "eat: failed to compile terminfo from %s" source)))))
+  :config
+  (when (eq system-type 'darwin)
+    (my/eat-compile-terminfo)
+    (setq eat-term-terminfo-directory my/eat-terminfo-directory)))
 
 
