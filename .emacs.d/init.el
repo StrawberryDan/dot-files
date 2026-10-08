@@ -268,10 +268,10 @@
   (defun my/corfu-prog-mode-hook ()
     (corfu-mode +1)
     (corfu-popupinfo-mode +1))
-  :custom
-  (corfu-auto t)
-  (corfu-auto-delay 1.0)
-  (corfu-auto-prefix 2)
+  :config
+  (setq corfu-auto t
+        corfu-auto-delay 0.4
+        corfu-auto-prefix 2)
   :hook
   ( (prog-mode . my/corfu-prog-mode-hook)
     (eval-expression-minibuffer-setup . corfu-mode) ))
