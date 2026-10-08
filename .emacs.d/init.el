@@ -147,7 +147,7 @@
   :bind
   ( :map my/goto-map
     ("g" . avy-goto-char-timer)
-    ("L" . avy-goto-line)
+    ("l" . avy-goto-line)
     ("w" . avy-goto-word-1)))
 
 (use-package ace-window
@@ -174,7 +174,7 @@
 (use-package consult
   :ensure t
   :bind
-  ( :map my/goto-map
+  ( :map my/find-map
     ("l" . consult-line) ))
 
 
