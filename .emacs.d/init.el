@@ -286,12 +286,23 @@
 ;;==========================================================
 (use-package magit
   :ensure t
+  :demand t
   :config
   (setq magit-display-buffer-function 'display-buffer)
   (add-to-list 'display-buffer-alist
                '((derived-mode magit-status-mode)
                  (display-buffer-in-side-window display-buffer-reuse-mode-window)
                  (side . left) (slot . 0) (window-width . 0.33) (mode . magit-status-mode) (preserve-size . (t . t)))))
+
+
+(use-package diff-hl
+  :ensure t
+  :demand t
+  :config
+  (global-diff-hl-mode +1)
+  (diff-hl-flydiff-mode +1)
+  :hook
+  ((dired-mode . diff-hl-dired-mode)))
 
 
 (use-package expreg
