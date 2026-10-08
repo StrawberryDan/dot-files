@@ -68,16 +68,20 @@
         hscroll-margin        8)
   ;; Setup display buffer alist
   (setq display-buffer-alist
-        `( (my/help-buffer-p
-            . ((display-buffer-in-side-window
-                display-buffer-reuse-mode-window)
-               . ((side . right) (slot . 0) (window-width . 0.25)
-                  (mode . ,my/help-buffer-list))))
+        `(((derived-mode prog-mode)
+           (display-buffer-same-window display-buffer-reuse-mode-window)
+           (mode . prog-mode))
+          (my/help-buffer-p
+           . ((display-buffer-in-side-window
+               display-buffer-reuse-mode-window)
+              . ((side . right) (slot . 0) (window-width . 0.25)
+                 (mode . ,my/help-buffer-list) (preserve-size . (t . t)))))
            ((derived-mode compilation-mode)
             (display-buffer-in-side-window display-buffer-reuse-window)
-            (side . bottom) (slot . -1) (window-height . 20) (mode . compilation-mode)) ))
+            (side . bottom) (slot . -1) (window-height . 20) (mode . compilation-mode) (preserve-size . (t . t))) ))
   ;; I don't like tabs
   (setq-default indent-tabs-mode nil)
+
   :config
   (global-display-line-numbers-mode 1)
   ;; Enable auto pairing
@@ -283,7 +287,7 @@
   (add-to-list 'display-buffer-alist
                '((derived-mode magit-status-mode)
                  (display-buffer-in-side-window display-buffer-reuse-mode-window)
-                 (side . left) (slot . 0) (window-width . 0.33) (mode . magit-status-mode))))
+                 (side . left) (slot . 0) (window-width . 0.33) (mode . magit-status-mode) (preserve-size . (t . t)))))
 
 
 (use-package expreg
@@ -323,7 +327,7 @@
   :config
   (add-to-list 'display-buffer-alist
                '((derived-mode eat-mode) (display-buffer-in-side-window display-buffer-reuse-mode-window)
-                 (side . bottom) (slot . 1) (window-height . 20) (mode . eat-mode)))
+                 (side . bottom) (slot . 1) (window-height . 20) (mode . eat-mode) (preserve-size . (t . t))))
   (when (eq system-type 'darwin)
     (my/eat-compile-terminfo)
     (setq eat-term-terminfo-directory my/eat-terminfo-directory)))
