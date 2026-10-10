@@ -116,20 +116,26 @@
   :demand t
   :preface
   (defun my/treesit-c++-indent-override-rules ()
-    (setq treesit-simple-indent-override-rules
-          '((cpp
-             ((n-p-gp "declaration_list" "namespace_definition" nil) parent 0)
-             ((n-p-gp "}" "declaration_list" "namespace_definition") parent 0)
-             ((n-p-gp nil "declaration_list" "namespace_definition") grand-parent c-ts-indent-offset)))))
+    (setopt treesit-simple-indent-override-rules
+            '((cpp
+               ((n-p-gp "declaration_list" "namespace_definition" nil) parent 0)
+               ((n-p-gp "}" "declaration_list" "namespace_definition") parent 0)
+               ((n-p-gp nil "declaration_list" "namespace_definition") grand-parent c-ts-indent-offset)
+
+               ((n-p-gp "field_declaration_list" nil nil) parent 0)
+               ((n-p-gp "access_specifier" "field_declaration_list" nil) parent 0)
+               ((n-p-gp "}" "field_declaration_list" nil) parent 0)
+               ((n-p-gp nil "field_declaration_list" nil) grand-parent c-ts-indent-offset)
+               ((n-p-gp nil "field_declaration_list" nil) grand-parent 0) ))))
   :config
-  (setq treesit-language-source-alist
+  (setopt treesit-language-source-alist
         '((cpp "https://github.com/tree-sitter/tree-sitter-cpp")
           (c   "https://github.com/tree-sitter/tree-sitter-c")))
   (dolist (map '((c-mode   . c-ts-mode)
                  (c++-mode . c++-ts-mode)))
     (add-to-list 'major-mode-remap-alist map))
-  (setq c-ts-indent-offset 4)
-  (setq c-ts-mode-indent-style 'bsd)
+  (setopt c-ts-indent-offset 4)
+  (setopt c-ts-mode-indent-style 'bsd)
   :hook (c++-ts-mode . my/treesit-c++-indent-override-rules))
 
 
