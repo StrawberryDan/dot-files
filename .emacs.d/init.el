@@ -125,6 +125,20 @@
     (exec-path-from-shell-initialize)))
 
 
+;; Position miniframe in middle of screen
+(use-package mini-frame
+  :ensure t
+  :init
+  (setq mini-frame-show-parameters '((top . 0.6)
+                                     (left . 0.5)
+                                     (width . 0.6)
+                                     (child-frame-border-width . 6))
+        mini-frame-internal-border-color "#c42b6e"
+        mini-frame-resize t)
+  :config
+  (mini-frame-mode 1))
+
+
 ;;==========================================================
 ;; Language Support
 ;;==========================================================
