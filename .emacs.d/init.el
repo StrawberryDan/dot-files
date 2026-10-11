@@ -145,6 +145,10 @@
                ((n-p-gp nil "field_declaration_list" nil) grand-parent c-ts-indent-offset)
                ((n-p-gp nil "field_declaration_list" nil) grand-parent 0) ))))
   :config
+  ;; Setup support for cmake files
+  (add-to-list 'auto-mode-alist
+               '("\\`CMakeLists\\.txt\\'" . cmake-ts-mode))
+
   (setopt treesit-language-source-alist
         '((cpp "https://github.com/tree-sitter/tree-sitter-cpp")
           (c   "https://github.com/tree-sitter/tree-sitter-c")))
