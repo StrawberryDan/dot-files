@@ -82,9 +82,26 @@
   ;; I don't like tabs
   (setq-default indent-tabs-mode nil)
 
+  (let* ((cache-dir (expand-file-name "emacs/" (or (getenv "XDG_CACHE_HOME") "~/.cache")))
+         (backup-dir (expand-file-name "backups/" cache-dir))
+         (auto-save-dir (expand-file-name "auto-saves/" cache-dir))
+         (lock-dir (expand-file-name "locks/" cache-dir)))
+    (dolist (dir (list backup-dir auto-save-dir lock-dir))
+      (make-directory dir t))
+    (setq backup-directory-alist `(("." . ,backup-dir))
+          auto-save-file-name-transforms `((".*" ,auto-save-dir t))
+          lock-file-name-transforms      `((".*" ,lock-dir t))
+          auto-save-list-file-prefix     (expand-file-name "sessions/.saves-" cache-dir)))
+
   ;; Configure compile mode
   (setq compilation-scroll-output 'first-error
         compilation-skip-threshold 2)
+
+  ;; Set repeat mode timeout
+  (setq repeat-mode-timeout 1.0)
+  ;; Set repeat mode exit get
+  (setq repeat-exit-key "<RET>")
+
 
   :config
   (global-display-line-numbers-mode 1)
