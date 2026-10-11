@@ -111,7 +111,7 @@
   (savehist-mode 1)
   ;; Enable default windmove bindings.
   (windmove-default-keybindings)
-
+  ;; Enable repeat mode
   (repeat-mode +1)
   :hook
   ( (prog-mode . my/prog-mode-hook) ))
