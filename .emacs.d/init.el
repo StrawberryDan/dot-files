@@ -13,9 +13,6 @@
       (or
        (derived-mode-p my/help-buffer-list)
        (string-match "\\*Man.*?\\*" buf))))
-  (defun my/prog-mode-hook ()
-    (whitespace-mode 1)
-    (setq-local truncate-lines t))
 
   (defvar-keymap my/code-map
     :name "Code Map"
@@ -50,16 +47,20 @@
   (unless (file-exists-p custom-file)
     (make-empty-file custom-file))
   (load custom-file nil t)
+
   ;; Setup package library
   (require 'package)
   (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+  ;; Allow package to upgrade built in packages too.
+  (setq package-install-upgrade-built-in t)
+  ;; Initialise package library
   (package-initialize)
   (unless package-archive-contents
     (package-refresh-contents))
   ;; No silly tab sizes
   (setq-default tab-width 4)
-  ;; Whitespace styling
-  (setq whitespace-style '(face trailing lines-tail newline space-mark tab-mark newline-mark))
+    ;; I don't like tabs
+  (setq-default indent-tabs-mode nil)
   ;; Setup scrolling
   (setq scroll-conservatively 5
         scroll-margin         5
@@ -68,20 +69,20 @@
         hscroll-margin        8)
   ;; Setup display buffer alist
   (setq display-buffer-alist
-        `(((derived-mode prog-mode)
-           (display-buffer-same-window display-buffer-reuse-mode-window)
-           (mode . prog-mode))
-          (my/help-buffer-p
-           . ((display-buffer-in-side-window
-               display-buffer-reuse-mode-window)
-              . ((side . right) (slot . 0) (window-width . 0.25)
-                 (mode . ,my/help-buffer-list) (preserve-size . (t . t)))))
-           ((derived-mode compilation-mode)
-            (display-buffer-in-side-window display-buffer-reuse-window)
-            (side . bottom) (slot . -1) (window-height . 20) (mode . compilation-mode) (preserve-size . (t . t))) ))
-  ;; I don't like tabs
-  (setq-default indent-tabs-mode nil)
+        `(((derived-mode prog-mode) .
+           ((display-buffer-same-window display-buffer-reuse-mode-window) .
+            ((mode . prog-mode))))
 
+          (my/help-buffer-p .
+           ((display-buffer-in-side-window display-buffer-reuse-mode-window) .
+                ((side . right) (slot . 0) (window-width . 0.25) (mode . ,my/help-buffer-list) (preserve-size . (t . t)))))
+
+           ((derived-mode compilation-mode) .
+            ((display-buffer-in-side-window display-buffer-reuse-mode-window) .
+             ((side . bottom) (slot . -1) (window-height . 20) (mode . compilation-mode) (preserve-size . (t . t)))))
+           ))
+
+  ;; Setup cache directories
   (let* ((cache-dir (expand-file-name "emacs/" (or (getenv "XDG_CACHE_HOME") "~/.cache")))
          (backup-dir (expand-file-name "backups/" cache-dir))
          (auto-save-dir (expand-file-name "auto-saves/" cache-dir))
@@ -98,12 +99,17 @@
         compilation-skip-threshold 2)
 
   ;; Set repeat mode timeout
-  (setq repeat-mode-timeout 1.0)
+  (setq repeat-exit-timeout 1.0)
   ;; Set repeat mode exit get
   (setq repeat-exit-key "<RET>")
 
 
   :config
+  ;; Disable toolbar
+  (tool-bar-mode -1)
+  ;; Disable menu bar
+  (menu-bar-mode -1)
+  ;; Display line numbers globally
   (global-display-line-numbers-mode 1)
   ;; Enable auto pairing
   (electric-pair-mode 1)
@@ -112,9 +118,18 @@
   ;; Enable default windmove bindings.
   (windmove-default-keybindings)
   ;; Enable repeat mode
-  (repeat-mode +1)
+  (repeat-mode +1))
+
+
+(use-package whitespace
+  :ensure nil
+  :demand t
+  :init
+    ;; Whitespace styling
+  (setq whitespace-line-column 80
+        whitespace-style '(face trailing tabs spaces lines-char newline space-mark tab-mark newline-mark))
   :hook
-  ( (prog-mode . my/prog-mode-hook) ))
+  ( (prog-mode . whitespace-mode) ))
 
 
 (when (memq system-type '(darwin gnu gnu/linux gnu/freebsd))
@@ -179,9 +194,16 @@
   :demand t
   :hook
   ((c-mode c-ts-mode c++-mode c++-ts-mode) . eglot-ensure)
-  :custom
-  (eglot-server-programs '(((c-mode c++-mode c-ts-mode c++-ts-mode) . ("clangd"))))
-  (eglot-ignored-server-capabilities '(:documentOnTypeFormattingProvider)))
+  :config
+  (setq eglot-server-programs '(((c-mode c++-mode c-ts-mode c++-ts-mode) . ("clangd"
+                                                                            "--function-arg-placeholders=1"
+                                                                            "--completion-style=detailed"
+                                                                            "--header-insertion=iwyu"
+                                                                            "--clang-tidy"))))
+  (setq eglot-ignored-server-capabilities '(:documentOnTypeFormattingProvider))
+  :bind
+  ( :map my/code-map
+    ("r" . eglot-rename)) )
 
 
 ;;==========================================================
@@ -196,16 +218,27 @@
 (use-package avy
   :ensure t
   :demand t
+  :config
+  (setq avy-all-windows nil
+        avy-all-windows-alt t
+        avy-style 'at
+        avy-background t)
+  (with-eval-after-load 'pulsar
+    (add-to-list 'pulsar-pulse-functions 'avy-goto-word-1)
+    (add-to-list 'pulsar-pulse-functions 'avy-goto-line)
+    (add-to-list 'pulsar-pulse-functions 'avy-goto-char-timer))
   :bind
   ( :map my/goto-map
     ("g" . avy-goto-char-timer)
     ("l" . avy-goto-line)
     ("w" . avy-goto-word-1)))
 
+
 (use-package ace-window
   :ensure t
   :config
-  (setq aw-keys '(?a ?s ?d ?f ?j ?k ?l ?l)
+  (setq aw-dispatch-always t
+        aw-keys '(?a ?s ?d ?f ?j ?k ?l ?l)
         aw-dispatch-alist '((?m aw-swap-window "Swap")
                             (?M aw-move-window "Move")
                             (?x aw-delete-window "Kill")
@@ -216,15 +249,15 @@
 
 (use-package orderless
   :ensure t
-  :after cape
-  :custom
-  ( completion-styles '(orderless) )
-  ( completion-category-defaults nil )
-  ( orderless-matching-styles '(orderless-literal orderless-regexp orderless-prefixes )))
+  :demand t
+  :config
+  (setq completion-styles '(orderless)
+        completion-category-defaults nil))
 
 
 (use-package consult
   :ensure t
+  :demand t
   :bind
   ( :map my/find-map
     ("l" . consult-line) ))
@@ -248,7 +281,7 @@
   :bind
   ( :map my/find-map
     ("f" . affe-find)
-    ("F" . affe-grep)))
+    ("g" . affe-grep)))
 
 
 (use-package dirvish
@@ -260,14 +293,20 @@
 ;;==========================================================
 ;; Appearence
 ;;==========================================================
+(use-package pulsar
+  :ensure t
+  :demand t
+  :config
+  (pulsar-global-mode +1))
+
+
 (use-package spacious-padding
   :ensure t
-  :custom
-  (spacious-padding-widths
-   '( :internal-border-width 4
-      :right-divider-width 4
-      :mode-line-width 4))
-  (spacious-padding-subtle-mode-line t)
+  :config
+  (setq spacious-padding-widths '( :internal-border-width 4
+                                   :right-divider-width 4
+                                   :mode-line-width 4)
+        spacious-padding-subtle-mode-line t)
   :config
   (spacious-padding-mode 1))
 
@@ -281,7 +320,6 @@
   ;; leaves them unstyled and indistinguishable from plain text.
   (custom-theme-set-faces
    'darcula
-   '(default               ((t (:height 160))))
    '(custom-button         ((t (:background "#4C5052" :foreground "#BBBBBB"))))
    '(custom-button-mouse   ((t (:background "#5C6164" :foreground "#BBBBBB"))))
    '(custom-button-pressed ((t (:background "#365880" :foreground "#BBBBBB")))))
@@ -291,10 +329,6 @@
 ;;==========================================================
 ;; Competion
 ;;==========================================================
-(use-package cape
-  :ensure t)
-
-
 (use-package vertico
   :ensure t
   :config
@@ -319,7 +353,7 @@
         corfu-auto-prefix 2)
   :hook
   ( (prog-mode . my/corfu-prog-mode-hook)
-    (eval-expression-minibuffer-setup . corfu-mode) ))
+    (eval-expression-minibuffer-setup . my/corfu-prog-mode-hook) ))
 
 
 ;;==========================================================
@@ -331,9 +365,15 @@
   :config
   (setq magit-display-buffer-function 'display-buffer)
   (add-to-list 'display-buffer-alist
-               '((derived-mode magit-status-mode)
-                 (display-buffer-in-side-window display-buffer-reuse-mode-window)
-                 (side . left) (slot . 0) (window-width . 0.33) (mode . magit-status-mode) (preserve-size . (t . t)))))
+               '((derived-mode magit-status-mode) .
+                 ((display-buffer-in-side-window display-buffer-reuse-mode-window) .
+                  ((side . left) (slot . 0) (window-width . 0.25) (mode . magit-status-mode) (preserve-size . (t . t)))))))
+
+
+(use-package magit-todos
+  :ensure t
+  :demand t
+  :after magit)
 
 
 (use-package diff-hl
@@ -382,10 +422,10 @@
           (message "eat: failed to compile terminfo from %s" source)))))
   :config
   (add-to-list 'display-buffer-alist
-               '((derived-mode eat-mode) (display-buffer-in-side-window display-buffer-reuse-mode-window)
-                 (side . bottom) (slot . 1) (window-height . 20) (mode . eat-mode) (preserve-size . (t . t))))
+               '((derived-mode eat-mode) .
+                 ((display-buffer-in-side-window display-buffer-reuse-mode-window) .
+                  ((side . bottom) (slot . 1) (window-height . 20) (mode . eat-mode) (preserve-size . (t . t))))))
   (when (eq system-type 'darwin)
     (my/eat-compile-terminfo)
     (setq eat-term-terminfo-directory my/eat-terminfo-directory)))
-
 
