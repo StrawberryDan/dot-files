@@ -13,6 +13,15 @@
       (or
        (derived-mode-p my/help-buffer-list)
        (string-match "\\*Man.*?\\*" buf))))
+  (defun my/prog-mode-hook ()
+    ;; Setup better scrolling
+    (setq-local scroll-conservatively 5
+                scroll-margin         5
+                hscroll-margin        10
+                hscroll-step          0.33
+                hscroll-margin        8)
+    ;; Enable line truncation
+    (setq-local truncate-lines t))
 
   (defvar-keymap my/code-map
     :name "Code Map"
@@ -59,14 +68,8 @@
     (package-refresh-contents))
   ;; No silly tab sizes
   (setq-default tab-width 4)
-    ;; I don't like tabs
+  ;; I don't like tabs
   (setq-default indent-tabs-mode nil)
-  ;; Setup scrolling
-  (setq scroll-conservatively 5
-        scroll-margin         5
-        hscroll-margin        10
-        hscroll-step          0.33
-        hscroll-margin        8)
   ;; Setup display buffer alist
   (setq display-buffer-alist
         `(((derived-mode prog-mode) .
@@ -118,14 +121,17 @@
   ;; Enable default windmove bindings.
   (windmove-default-keybindings)
   ;; Enable repeat mode
-  (repeat-mode +1))
+  (repeat-mode +1)
+
+  :hook
+  (prog-mode . my/prog-mode-hook))
 
 
 (use-package whitespace
   :ensure nil
   :demand t
   :init
-    ;; Whitespace styling
+  ;; Whitespace styling
   (setq whitespace-line-column 80
         whitespace-style '(face trailing tabs spaces lines-char newline space-mark tab-mark newline-mark))
   :hook
@@ -176,7 +182,7 @@
   :config
   ;; Setup support for cmake files
   (add-to-list 'auto-mode-alist
-               '("\\`CMakeLists\\.txt\\'" . cmake-ts-mode))
+               '("CMakeLists\\.txt\\'" . cmake-ts-mode))
 
   (setopt treesit-language-source-alist
         '((cpp "https://github.com/tree-sitter/tree-sitter-cpp")
@@ -195,14 +201,17 @@
   :hook
   ((c-mode c-ts-mode c++-mode c++-ts-mode) . eglot-ensure)
   :config
-  (setq eglot-server-programs '(((c-mode c++-mode c-ts-mode c++-ts-mode) . ("clangd"
-                                                                            "--function-arg-placeholders=1"
-                                                                            "--completion-style=detailed"
-                                                                            "--header-insertion=iwyu"
-                                                                            "--clang-tidy"))))
+  (setq eglot-server-programs '(((c-mode c++-mode c-ts-mode c++-ts-mode) .
+                                 ("clangd"
+                                  "--query-driver=/usr/bin/*"
+                                  "--function-arg-placeholders=1"
+                                  "--completion-style=detailed"
+                                  "--header-insertion=iwyu"
+                                  "--clang-tidy"))))
   (setq eglot-ignored-server-capabilities '(:documentOnTypeFormattingProvider))
   :bind
   ( :map my/code-map
+    ("a" . eglot-code-actions)
     ("r" . eglot-rename)) )
 
 
@@ -300,30 +309,11 @@
   (pulsar-global-mode +1))
 
 
-(use-package spacious-padding
-  :ensure t
-  :config
-  (setq spacious-padding-widths '( :internal-border-width 4
-                                   :right-divider-width 4
-                                   :mode-line-width 4)
-        spacious-padding-subtle-mode-line t)
-  :config
-  (spacious-padding-mode 1))
-
-
 (use-package darcula-theme
   :ensure t
   :demand t
   :config
-  (load-theme 'darcula t)
-  ;; Darcula doesn't style Customize buttons; without these spacious-padding
-  ;; leaves them unstyled and indistinguishable from plain text.
-  (custom-theme-set-faces
-   'darcula
-   '(custom-button         ((t (:background "#4C5052" :foreground "#BBBBBB"))))
-   '(custom-button-mouse   ((t (:background "#5C6164" :foreground "#BBBBBB"))))
-   '(custom-button-pressed ((t (:background "#365880" :foreground "#BBBBBB")))))
-  (enable-theme 'darcula))
+  (load-theme 'darcula t))
 
 
 ;;==========================================================
@@ -359,21 +349,43 @@
 ;;==========================================================
 ;; Programming
 ;;==========================================================
+(use-package ediff
+  :ensure t
+  :config
+  (setq ediff-window-setup-function #'ediff-setup-windows-plain
+        ediff-split-window-function #'split-window-horizontally)
+  (custom-theme-set-faces 'user
+                          '(ediff-even-diff-A ((t . (:background "#282323"))))
+                          '(ediff-even-diff-B ((t . (:background "#232823"))))
+                          '(ediff-even-diff-C ((t . (:background "#232328"))))
+                          '(ediff-odd-diff-A  ((t . (:background "#1e1b1b"))))
+                          '(ediff-odd-diff-B  ((t . (:background "#1b1e1b"))))
+                          '(ediff-odd-diff-C  ((t . (:background "#1b1b1e"))))))
+
+
 (use-package magit
   :ensure t
   :demand t
   :config
   (setq magit-display-buffer-function 'display-buffer)
+  (setq magit-diff-refine-hunk 'all
+        magit-diff-refine-ignore-whitespace t)
   (add-to-list 'display-buffer-alist
                '((derived-mode magit-status-mode) .
                  ((display-buffer-in-side-window display-buffer-reuse-mode-window) .
-                  ((side . left) (slot . 0) (window-width . 0.25) (mode . magit-status-mode) (preserve-size . (t . t)))))))
+                  ((side . left) (slot . 0) (window-width . 0.25) (mode . magit-status-mode) (preserve-size . (t . t)) (dedicated . side)))))
+  (magit-wip-mode +1))
 
 
 (use-package magit-todos
   :ensure t
   :demand t
-  :after magit)
+  :after magit
+  :config
+  (add-to-list 'display-buffer-alist
+               '((derived-mode magit-todos-list-mode) .
+                 ((display-buffer-in-side-window) .
+                  ((side . left) (slot . 1) (window-width . 0.25) (preserve_size . (t . t)))))))
 
 
 (use-package diff-hl
