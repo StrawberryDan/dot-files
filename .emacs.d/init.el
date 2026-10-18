@@ -203,7 +203,6 @@
   :config
   (setq eglot-server-programs '(((c-mode c++-mode c-ts-mode c++-ts-mode) .
                                  ("clangd"
-                                  "--query-driver=/usr/bin/*"
                                   "--function-arg-placeholders=1"
                                   "--completion-style=detailed"
                                   "--header-insertion=iwyu"
