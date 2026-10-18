@@ -193,7 +193,8 @@
         '((cpp "https://github.com/tree-sitter/tree-sitter-cpp")
           (c   "https://github.com/tree-sitter/tree-sitter-c")))
   (dolist (map '((c-mode   . c-ts-mode)
-                 (c++-mode . c++-ts-mode)))
+                 (c++-mode . c++-ts-mode)
+                 (rust-mode . rust-ts-mode)))
     (add-to-list 'major-mode-remap-alist map))
   (setopt c-ts-indent-offset 4)
   (setopt c-ts-mode-indent-style 'bsd)
@@ -204,7 +205,7 @@
   :ensure nil
   :demand t
   :hook
-  ((c-mode c-ts-mode c++-mode c++-ts-mode) . eglot-ensure)
+  ((c-mode c-ts-mode c++-mode c++-ts-mode rust-mode rust-ts-mode) . eglot-ensure)
   :config
   (setq eglot-server-programs '(((c-mode c++-mode c-ts-mode c++-ts-mode) .
                                  ("clangd"
