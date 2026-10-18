@@ -146,6 +146,11 @@
     (exec-path-from-shell-initialize)))
 
 
+(use-package tramp
+  :ensure t
+  :demand t)
+
+
 ;; Position miniframe in middle of screen
 (use-package mini-frame
   :ensure t
