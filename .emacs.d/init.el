@@ -7,12 +7,14 @@
 (use-package emacs
   :preface
   (defconst my/help-buffer-list
-    '(help-mode Man-mode Info-mode))
+    '(help-mode Man-mode Info-mode apropos-mode))
+
   (defun my/help-buffer-p (buf _action)
     (with-current-buffer buf
       (or
        (derived-mode-p my/help-buffer-list)
        (string-match "\\*Man.*?\\*" buf))))
+
   (defun my/prog-mode-hook ()
     ;; Setup better scrolling
     (setq-local scroll-conservatively 5
@@ -21,7 +23,11 @@
                 hscroll-step          0.33
                 hscroll-margin        8)
     ;; Enable line truncation
-    (setq-local truncate-lines t))
+    (setq-local truncate-lines t)
+      ;; Display line numbers
+    (display-line-numbers-mode +1)
+    ;; Enable auto pairing
+    (electric-pair-mode +1))
 
   (defvar-keymap my/code-map
     :name "Code Map"
@@ -66,23 +72,27 @@
   (package-initialize)
   (unless package-archive-contents
     (package-refresh-contents))
+
   ;; No silly tab sizes
   (setq-default tab-width 4)
   ;; I don't like tabs
   (setq-default indent-tabs-mode nil)
   ;; Setup display buffer alist
   (setq display-buffer-alist
-        `(((derived-mode prog-mode) .
+        `(((derived-mode . prog-mode) .
            ((display-buffer-same-window display-buffer-reuse-mode-window) .
             ((mode . prog-mode))))
 
           (my/help-buffer-p .
-           ((display-buffer-in-side-window display-buffer-reuse-mode-window) .
+           ((display-buffer-reuse-mode-window display-buffer-in-side-window) .
                 ((side . right) (slot . 0) (window-width . 0.25) (mode . ,my/help-buffer-list) (preserve-size . (t . t)))))
 
-           ((derived-mode compilation-mode) .
-            ((display-buffer-in-side-window display-buffer-reuse-mode-window) .
-             ((side . bottom) (slot . -1) (window-height . 20) (mode . compilation-mode) (preserve-size . (t . t)))))
+           ((derived-mode . compilation-mode) .
+            ((display-buffer-reuse-mode-window display-buffer-in-side-window) .
+             ((side . bottom) (slot . -1) (window-height . 10) (mode . compilation-mode) (preserve-size . (t . t)))))
+
+           ("\\*xref\\*" .
+            ((display-buffer-in-side-window) . ((side . right) (slot . 1))))
            ))
 
   ;; Setup cache directories
@@ -106,16 +116,29 @@
   ;; Set repeat mode exit get
   (setq repeat-exit-key "<RET>")
 
+  ;; Prevent the use of UI dialog boxes
+  (setq use-dialog-box nil)
+
+
+  ;; Use preferred cursor type
+  (setq-default cursor-type '(hbar . 4))
+  ;; Stop cursor blinks from stopping
+  (setq blink-cursor-blinks 0)
+  ;; Have a longer time before the cursor starts blinking.
+  (setopt blink-cursor-delay 2.0)
+  ;; Cursor blinking switches between normal and box mode.
+  (setq blink-cursor-alist `((,cursor-type . box)))
+  ;; Stop cursor from displaying in non selected windows
+  (setq-default cursor-in-non-selected-windows 'box)
+
 
   :config
   ;; Disable toolbar
   (tool-bar-mode -1)
   ;; Disable menu bar
   (menu-bar-mode -1)
-  ;; Display line numbers globally
-  (global-display-line-numbers-mode 1)
-  ;; Enable auto pairing
-  (electric-pair-mode 1)
+  ;; Disable scroll bars
+  (scroll-bar-mode -1)
   ;; Savehist mode makes vertico work better.
   (savehist-mode 1)
   ;; Enable default windmove bindings.
@@ -155,14 +178,21 @@
 (use-package mini-frame
   :ensure t
   :init
-  (setq mini-frame-show-parameters '((top . 0.6)
+  (setq mini-frame-show-parameters '((top . 0.1)
                                      (left . 0.5)
-                                     (width . 0.6)
+                                     (width . 0.33)
                                      (child-frame-border-width . 6))
         mini-frame-internal-border-color "#c42b6e"
         mini-frame-resize t)
   :config
   (mini-frame-mode 1))
+
+
+(use-package transient
+  :config
+  (setq transient-display-buffer-action
+        '((display-buffer-below-selected)
+          . ((dedicated . t)))))
 
 
 ;;==========================================================
@@ -201,23 +231,51 @@
   :hook (c++-ts-mode . my/treesit-c++-indent-override-rules))
 
 
+(use-package find-file
+  :demand t
+  :bind
+  ( :map my/goto-map
+    ("o" . ff-find-other-file)))
+
+
+(use-package flymake
+  :demand t
+  :bind
+  ( :map my/code-map
+    ("d" . flymake-show-buffer-diagnostics)
+    ("D" . flymake-show-project-diagnostics)))
+
+
 (use-package eglot
+  :preface
+  (defun my/eglot-managed-mode-hook ()
+    ;; No inlay hints by default
+    (eglot-inlay-hints-mode -1))
   :ensure nil
   :demand t
-  :hook
-  ((c-mode c-ts-mode c++-mode c++-ts-mode rust-mode rust-ts-mode) . eglot-ensure)
   :config
+  ;; Setup language servers explicitly
   (setq eglot-server-programs '(((c-mode c++-mode c-ts-mode c++-ts-mode) .
                                  ("clangd"
+                                  "--query-driver=/usr/bin/*"
                                   "--function-arg-placeholders=1"
                                   "--completion-style=detailed"
                                   "--header-insertion=iwyu"
                                   "--clang-tidy"))))
+  ;; Disable on type formatting
   (setq eglot-ignored-server-capabilities '(:documentOnTypeFormattingProvider))
+  :hook
+  (( c-mode c-ts-mode
+     c++-mode c++-ts-mode
+     rust-mode rust-ts-mode )
+   . eglot-ensure)
+  (eglot-managed-mode . my/eglot-managed-mode-hook)
   :bind
   ( :map my/code-map
     ("a" . eglot-code-actions)
-    ("r" . eglot-rename)) )
+    ("r" . eglot-rename))
+  ( :map my/find-map
+    ("i" . eglot-find-implementation)))
 
 
 ;;==========================================================
@@ -245,17 +303,19 @@
   ( :map my/goto-map
     ("g" . avy-goto-char-timer)
     ("l" . avy-goto-line)
-    ("w" . avy-goto-word-1)))
+    ("w" . avy-goto-word-1)
+    ("c" . avy-goto-char)))
 
 
 (use-package ace-window
   :ensure t
   :config
   (setq aw-dispatch-always t
-        aw-keys '(?a ?s ?d ?f ?j ?k ?l ?l)
-        aw-dispatch-alist '((?m aw-swap-window "Swap")
-                            (?M aw-move-window "Move")
+        aw-keys '(?a ?s ?d ?f ?j ?k ?l ?q ?w ?e ?r ?t ?y ?u ?i ?o ?p)
+        aw-dispatch-alist '((?M aw-swap-window   "Swap")
+                            (?m aw-move-window   "Move")
                             (?x aw-delete-window "Kill")
+                            (?c aw-copy-window   "Copy")
                             (?? aw-show-dispatch-help)))
   :bind
   (("C-c w" . ace-window)))
@@ -304,6 +364,22 @@
   (dirvish-override-dired-mode))
 
 
+(use-package multiple-cursors
+  :ensure t
+  :demand t
+  :bind
+  ( :map my/mark-map
+    ("n" . mc/mark-next-like-this)
+    ("N" . mc/unmark-next-like-this)
+    ("C-n" . mc/mark-next-word-like-this)
+    ("M-n" . mc/mark-next-symbol-like-this)
+    :repeat-map my/mark-map-repeat
+    ("n" . mc/mark-next-like-this)
+    ("N" . mc/unmark-next-like-this)
+    ("C-n" . mc/mark-next-word-like-this)
+    ("M-n" . mc/mark-next-symbol-like-this)))
+
+
 ;;==========================================================
 ;; Appearence
 ;;==========================================================
@@ -311,7 +387,8 @@
   :ensure t
   :demand t
   :config
-  (pulsar-global-mode +1))
+  (pulsar-global-mode +1)
+  :hook (focus-in . pulsar-pulse-line))
 
 
 (use-package darcula-theme
@@ -376,9 +453,14 @@
   (setq magit-diff-refine-hunk 'all
         magit-diff-refine-ignore-whitespace t)
   (add-to-list 'display-buffer-alist
-               '((derived-mode magit-status-mode) .
-                 ((display-buffer-in-side-window display-buffer-reuse-mode-window) .
-                  ((side . left) (slot . 0) (window-width . 0.25) (mode . magit-status-mode) (preserve-size . (t . t)) (dedicated . side)))))
+               '((derived-mode . magit-status-mode)
+                 . ((display-buffer-reuse-mode-window
+                     display-buffer-in-direction)
+                    . ((direction . left)
+                       (window . main)
+                       (window-width . 70)
+                       (mode . magit-status-mode)
+                       (preserve-size . (t . t))))))
   (magit-wip-mode +1))
 
 
@@ -388,9 +470,9 @@
   :after magit
   :config
   (add-to-list 'display-buffer-alist
-               '((derived-mode magit-todos-list-mode) .
-                 ((display-buffer-in-side-window) .
-                  ((side . left) (slot . 1) (window-width . 0.25) (preserve_size . (t . t)))))))
+               '((derived-mode . magit-todos-list-mode) .
+                 ((display-buffer-reuse-mode-window display-buffer-in-side-window) .
+                  ((side . left) (slot . 1) (window-width . 0.25) (preserve_size . (t . t)) (mode . magit-todos-list-mode))))))
 
 
 (use-package diff-hl
@@ -439,9 +521,9 @@
           (message "eat: failed to compile terminfo from %s" source)))))
   :config
   (add-to-list 'display-buffer-alist
-               '((derived-mode eat-mode) .
+               '((derived-mode . eat-mode) .
                  ((display-buffer-in-side-window display-buffer-reuse-mode-window) .
-                  ((side . bottom) (slot . 1) (window-height . 20) (mode . eat-mode) (preserve-size . (t . t))))))
+                  ((side . bottom) (slot . 1) (window-height . 10) (mode . eat-mode) (preserve-size . (t . t)) (dedicated . side)))))
   (when (eq system-type 'darwin)
     (my/eat-compile-terminfo)
     (setq eat-term-terminfo-directory my/eat-terminfo-directory)))
