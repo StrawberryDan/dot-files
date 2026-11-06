@@ -17,18 +17,20 @@
 
   (defun my/prog-mode-hook ()
     ;; Setup better scrolling
-    (setq-local scroll-conservatively 5
-                scroll-margin         5
-                hscroll-margin        10
-                hscroll-step          0.33
-                hscroll-margin        8)
+    (setq-local scroll-conservatively           5
+                scroll-margin                   5
+                hscroll-margin                  10
+                hscroll-step                    0.33
+                hscroll-margin                  8
+                scroll-preserve-screen-position t)
     ;; Enable line truncation
     (setq-local truncate-lines t)
-      ;; Display line numbers
+    ;; Display line numbers
     (display-line-numbers-mode +1)
     ;; Enable auto pairing
     (electric-pair-mode +1))
 
+  ;; Setup keybindings
   (defvar-keymap my/code-map
     :name "Code Map"
     :doc "Code Commands"
@@ -49,11 +51,15 @@
     :doc "Mark Commands"
     :prefix t
     "b" #'mark-whole-buffer)
-
+  (keymap-global-set "C-c m" my/mark-map)
+  (defvar-keymap my/window-map
+    :name "Window Map"
+    :doc "Windowing Commands"
+    :prefix t
+    "t" #'tab-window-detach)
+  (keymap-global-set "C-c w" my/window-map)
 
   :init
-  ;; Setup keybindings
-  (keymap-global-set "C-c m" my/mark-map)
   ;; Put F9 to C-c for additional invoke.
   (keymap-set key-translation-map "<f9>" "C-c")
 
@@ -72,6 +78,16 @@
   (package-initialize)
   (unless package-archive-contents
     (package-refresh-contents))
+
+  ;; Set font from list of prefered fonts.
+  (if-let* ((font-list (list (font-spec :family "Iosevka Term"
+                                        :weight 'bold
+                                        :width 'expanded
+                                        :size 9.0)))
+            (found-font (seq-find #'find-font font-list)))
+      (custom-theme-set-faces 'user
+                              `(default ((t . (:font ,found-font)))))
+    (warn "Failed to find any of the prefered fonts (%s)!" font-list))
 
   ;; No silly tab sizes
   (setq-default tab-width 4)
@@ -112,7 +128,7 @@
         compilation-skip-threshold 2)
 
   ;; Set repeat mode timeout
-  (setq repeat-exit-timeout 1.0)
+  (setq repeat-exit-timeout 1.5)
   ;; Set repeat mode exit get
   (setq repeat-exit-key "<RET>")
 
@@ -224,7 +240,9 @@
           (c   "https://github.com/tree-sitter/tree-sitter-c")))
   (dolist (map '((c-mode   . c-ts-mode)
                  (c++-mode . c++-ts-mode)
-                 (rust-mode . rust-ts-mode)))
+                 (rust-mode . rust-ts-mode)
+                 (java-mode . java-ts-mode)
+                 (python-mode . python-ts-mode)))
     (add-to-list 'major-mode-remap-alist map))
   (setopt c-ts-indent-offset 4)
   (setopt c-ts-mode-indent-style 'bsd)
@@ -261,13 +279,19 @@
                                   "--function-arg-placeholders=1"
                                   "--completion-style=detailed"
                                   "--header-insertion=iwyu"
-                                  "--clang-tidy"))))
+                                  "--clang-tidy"))
+                                ((java-mode java-ts-mode) .
+                                 ("jdtls"))
+                                ((python-mode python-ts-mode) .
+                                 ("rass" "python"))))
   ;; Disable on type formatting
   (setq eglot-ignored-server-capabilities '(:documentOnTypeFormattingProvider))
   :hook
   (( c-mode c-ts-mode
      c++-mode c++-ts-mode
-     rust-mode rust-ts-mode )
+     rust-mode rust-ts-mode
+     python-mode python-ts-mode
+     java-mode java-ts-mode )
    . eglot-ensure)
   (eglot-managed-mode . my/eglot-managed-mode-hook)
   :bind
@@ -294,7 +318,9 @@
   (setq avy-all-windows nil
         avy-all-windows-alt t
         avy-style 'at
-        avy-background t)
+        avy-background t
+        avy-case-fold-search nil
+        avy-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l ?\;))
   (with-eval-after-load 'pulsar
     (add-to-list 'pulsar-pulse-functions 'avy-goto-word-1)
     (add-to-list 'pulsar-pulse-functions 'avy-goto-line)
@@ -304,21 +330,34 @@
     ("g" . avy-goto-char-timer)
     ("l" . avy-goto-line)
     ("w" . avy-goto-word-1)
-    ("c" . avy-goto-char)))
+    ("c" . avy-goto-char)
+    ("C" . avy-goto-char-in-line)))
 
 
 (use-package ace-window
   :ensure t
+  :preface
+  (defun my/ace-move-window ()
+    (interactive)
+    (require 'ace-window)
+    (aw-select "Ace - Move Window"
+               #'aw-move-window))
   :config
   (setq aw-dispatch-always t
         aw-keys '(?a ?s ?d ?f ?j ?k ?l ?q ?w ?e ?r ?t ?y ?u ?i ?o ?p)
-        aw-dispatch-alist '((?M aw-swap-window   "Swap")
-                            (?m aw-move-window   "Move")
-                            (?x aw-delete-window "Kill")
-                            (?c aw-copy-window   "Copy")
-                            (?? aw-show-dispatch-help)))
+        aw-dispatch-alist nil)
+  (custom-theme-set-faces 'user
+                          '(aw-leading-char-face
+                            ((t . ( :foreground "#FF0000"
+                                    :height 4.0)))))
   :bind
-  (("C-c w" . ace-window)))
+  ( :map my/window-map
+    ("w" . ace-select-window)
+    ("m" . my/ace-move-window)
+    ("M" . ace-swap-window)
+    ("c" . ace-copy-window)
+    ("k" . ace-delete-window)
+    ("K" . ace-delete-other-windows)))
 
 
 (use-package orderless
@@ -421,8 +460,9 @@
     (corfu-popupinfo-mode +1))
   :config
   (setq corfu-auto t
-        corfu-auto-delay 0.4
-        corfu-auto-prefix 2)
+        corfu-auto-delay 0.33
+        corfu-auto-prefix 3
+        corfu-auto-trigger ".>:")
   :hook
   ( (prog-mode . my/corfu-prog-mode-hook)
     (eval-expression-minibuffer-setup . my/corfu-prog-mode-hook) ))
@@ -502,6 +542,8 @@
 (use-package eat
   :ensure t
   :preface
+  (defun my/eat-mode-hook ()
+    (setq-local scroll-conservatively 101))
   ;; Eat's bundled terminfo is compiled by a newer ncurses than macOS ships,
   ;; so eat-truecolor/eat-256color are unreadable and zsh treats the terminal
   ;; as unknown (e.g. backspace prints a space).  Recompile with the system tic.
@@ -526,5 +568,7 @@
                   ((side . bottom) (slot . 1) (window-height . 10) (mode . eat-mode) (preserve-size . (t . t)) (dedicated . side)))))
   (when (eq system-type 'darwin)
     (my/eat-compile-terminfo)
-    (setq eat-term-terminfo-directory my/eat-terminfo-directory)))
+    (setq eat-term-terminfo-directory my/eat-terminfo-directory))
+  :hook
+  ((eat-mode . my/eat-mode-hook)))
 
