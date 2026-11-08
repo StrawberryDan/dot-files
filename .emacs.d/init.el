@@ -127,11 +127,11 @@
 
           (my/help-buffer-p .
            ((display-buffer-reuse-mode-window display-buffer-in-side-window) .
-                ((side . right) (slot . 0) (window-width . 0.25) (mode . ,my/help-buffer-list) (preserve-size . (t . t)))))
+                ((side . right) (slot . 0) (window-width . 75) (mode . ,my/help-buffer-list) (preserve-size . (t . t)))))
 
            ((derived-mode . compilation-mode) .
             ((display-buffer-reuse-mode-window display-buffer-in-side-window) .
-             ((side . bottom) (slot . -1) (window-height . 10) (mode . compilation-mode) (preserve-size . (t . t)))))
+             ((side . bottom) (slot . -1) (window-height . 12) (mode . compilation-mode) (preserve-size . (t . t)))))
 
            ("\\*xref\\*" .
             ((display-buffer-in-side-window) . ((side . right) (slot . 1))))
@@ -524,7 +524,7 @@
                      display-buffer-in-direction)
                     . ((direction . left)
                        (window . main)
-                       (window-width . 70)
+                       (window-width . 75)
                        (mode . magit-status-mode)
                        (preserve-size . (t . t))))))
   (magit-wip-mode +1))
@@ -538,7 +538,7 @@
   (add-to-list 'display-buffer-alist
                '((derived-mode . magit-todos-list-mode) .
                  ((display-buffer-reuse-mode-window display-buffer-in-side-window) .
-                  ((side . left) (slot . 1) (window-width . 0.25) (preserve_size . (t . t)) (mode . magit-todos-list-mode))))))
+                  ((side . left) (slot . 1) (window-width . 75) (preserve_size . (t . t)) (mode . magit-todos-list-mode))))))
 
 
 (use-package diff-hl
