@@ -21,8 +21,7 @@
                 scroll-margin                   5
                 hscroll-margin                  10
                 hscroll-step                    0.33
-                hscroll-margin                  8
-                scroll-preserve-screen-position t)
+                hscroll-margin                  8)
     ;; Enable line truncation
     (setq-local truncate-lines t)
     ;; Display line numbers
@@ -468,6 +467,7 @@
 ;;==========================================================
 (use-package vertico
   :ensure t
+  :demand t
   :config
   (vertico-mode 1))
 
