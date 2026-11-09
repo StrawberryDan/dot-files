@@ -139,11 +139,11 @@
 
           (my/help-buffer-p .
            ((display-buffer-reuse-mode-window display-buffer-in-side-window) .
-                ((side . right) (slot . 0) (window-width . 75) (mode . ,my/help-buffer-list) (preserve-size . (t . t)))))
+                ((side . right) (slot . 0) (window-width . 75) (mode . ,my/help-buffer-list))))
 
            ((derived-mode . compilation-mode) .
             ((display-buffer-reuse-mode-window display-buffer-in-side-window) .
-             ((side . bottom) (slot . -1) (window-height . 12) (mode . compilation-mode) (preserve-size . (t . t)))))
+             ((side . bottom) (slot . -1) (window-height . 12) (mode . compilation-mode))))
 
            ("\\*xref\\*" .
             ((display-buffer-in-side-window) . ((side . right) (slot . 1))))
@@ -524,8 +524,7 @@
                     . ((direction . left)
                        (window . main)
                        (window-width . 75)
-                       (mode . magit-status-mode)
-                       (preserve-size . (t . t))))))
+                       (mode . magit-status-mode)))))
   (magit-wip-mode +1))
 
 
@@ -537,7 +536,7 @@
   (add-to-list 'display-buffer-alist
                '((derived-mode . magit-todos-list-mode) .
                  ((display-buffer-reuse-mode-window display-buffer-in-side-window) .
-                  ((side . left) (slot . 1) (window-width . 75) (preserve_size . (t . t)) (mode . magit-todos-list-mode))))))
+                  ((side . left) (slot . 1) (window-width . 75) (mode . magit-todos-list-mode))))))
 
 
 (use-package diff-hl
@@ -590,7 +589,7 @@
   (add-to-list 'display-buffer-alist
                '((derived-mode . eat-mode) .
                  ((display-buffer-in-side-window display-buffer-reuse-mode-window) .
-                  ((side . bottom) (slot . 1) (window-height . 10) (mode . eat-mode) (preserve-size . (t . t)) (dedicated . side)))))
+                  ((side . bottom) (slot . 1) (window-height . 10) (mode . eat-mode) (dedicated . side)))))
   (when (eq system-type 'darwin)
     (my/eat-compile-terminfo)
     (setq eat-term-terminfo-directory my/eat-terminfo-directory))
