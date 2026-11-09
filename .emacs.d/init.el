@@ -32,30 +32,40 @@
   ;; Setup keybindings
   (defvar-keymap my/code-map
     :name "Code Map"
-    :doc "Code Commands"
-    :prefix t)
+    :prefix t
+    :doc "Code Commands")
   (keymap-global-set "C-c c" my/code-map)
   (defvar-keymap my/find-map
     :name "Find Map"
-    :doc "Find Commands"
-    :prefix t)
+    :prefix t
+    :doc "Find Commands")
   (keymap-global-set "C-c f" my/find-map)
   (defvar-keymap my/goto-map
     :name "Goto Map"
-    :doc "Find Commands"
-    :prefix t)
+    :prefix t
+    :doc "Find Commands")
   (keymap-global-set "C-c g" my/goto-map)
   (defvar-keymap my/mark-map
     :name "Mark Map"
-    :doc "Mark Commands"
     :prefix t
+    :doc "Mark Commands"
     "b" #'mark-whole-buffer)
   (keymap-global-set "C-c m" my/mark-map)
+  (defvar-keymap my/window-resize-keymap
+    :name "Window Resize Map"
+    :prefix t
+    :doc  "Commands for resizing windows"
+    :repeat t
+    "<left>"  (lambda () (interactive) (window-resize (selected-window) -1   t))
+    "<right>" (lambda () (interactive) (window-resize (selected-window) +1   t))
+    "<up>"    (lambda () (interactive) (window-resize (selected-window) +1 nil))
+    "<down>"  (lambda () (interactive) (window-resize (selected-window) -1 nil)))
   (defvar-keymap my/window-map
     :name "Window Map"
-    :doc "Windowing Commands"
     :prefix t
-    "t" #'tab-window-detach)
+    :doc "Windowing Commands"
+    "t" #'tab-window-detach
+    "r" #'my/window-resize-keymap)
   (keymap-global-set "C-c w" my/window-map)
 
   :init
@@ -213,20 +223,6 @@
 (use-package tramp
   :ensure t
   :demand t)
-
-
-;; Position miniframe in middle of screen
-(use-package mini-frame
-  :ensure t
-  :init
-  (setq mini-frame-show-parameters '((top . 0.1)
-                                     (left . 0.5)
-                                     (width . 0.33)
-                                     (child-frame-border-width . 6))
-        mini-frame-internal-border-color "#c42b6e"
-        mini-frame-resize t)
-  :config
-  (mini-frame-mode 1))
 
 
 (use-package transient
