@@ -89,35 +89,38 @@
     (package-refresh-contents))
 
   (defun my/frame-monitor-dpi (&optional frame)
-    (let* ((frame    (or frame (selected-frame)))
-           (attrs    (frame-monitor-attributes))
-           (mm-width (nth 1 (assq 'mm-size attrs)))
-           (px-width (nth 3 (assq 'geometry attrs))))
+    (when-let* ((frame    (or frame (selected-frame)))
+                (attrs    (frame-monitor-attributes))
+                (mm-width (nth 1 (assq 'mm-size attrs)))
+                (px-width (nth 3 (assq 'geometry attrs))))
       (/ px-width (/ mm-width 25.4))))
+
+  (defun my/monitor-font-res (&optional frame)
+    (when-let* ((spec (font-spec :family (face-attribute 'default :family frame)))
+                (entity (find-font spec frame))
+                (font (open-font entity 72.0 frame)))
+      (font-get font :size)))
 
   (defun my/frame-monitor-text-height (&optional frame)
     (let* ((dpi (my/frame-monitor-dpi frame))
-           (ref-dpi 109.0)
-           (base 90.0)
-           (h (round (* base (/ dpi ref-dpi)))))
-      h
-      ))
+           (base 80))
+      (round (* base (/ dpi (float (my/monitor-font-res frame)))))))
 
   (defun my/adjust-text-size-for-monitor (&optional frame)
-      (custom-theme-set-faces 'user
-                              `(default ((t . (:height ,(my/frame-monitor-text-height frame)))))))
+      (set-face-attribute 'default (selected-frame) :height (my/frame-monitor-text-height)))
 
   ;; Set font from list of prefered fonts.
   (if-let* ((font-list (list (font-spec :family "Iosevka Term"
-                                        :weight 'bold
+                                        :weight 'normal
                                         :width 'expanded)))
             (found-font (seq-find #'find-font font-list)))
       (custom-theme-set-faces 'user
                               `(default ((t . (:font ,found-font)))))
     (warn "Failed to find any of the prefered fonts (%s)!" font-list))
 
-  ;; Initialise font size
-  (my/adjust-text-size-for-monitor)
+
+  ;; Adjust whenever a new frame is made
+  (add-hook 'after-make-frame-functions #'my/adjust-text-size-for-monitor)
   ;; Adjust every time frame moves
   (add-hook 'move-frame-functions #'my/adjust-text-size-for-monitor)
 
