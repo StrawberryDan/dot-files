@@ -115,7 +115,7 @@
                                         :width 'expanded)))
             (found-font (seq-find #'find-font font-list)))
       (custom-theme-set-faces 'user
-                              `(default ((t . (:font ,found-font)))))
+                              `(default ((t . (:font ,(font-xlfd-name found-font))))))
     (warn "Failed to find any of the prefered fonts (%s)!" font-list))
 
 
