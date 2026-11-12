@@ -194,11 +194,15 @@
   ;; Disable scroll bars
   (scroll-bar-mode -1)
   ;; Savehist mode makes vertico work better.
-  (savehist-mode 1)
+  (savehist-mode +1)
   ;; Enable default windmove bindings.
   (windmove-default-keybindings)
   ;; Enable repeat mode
   (repeat-mode +1)
+  ;; Global auto revert
+  (global-auto-revert-mode +1)
+  ;; Apply auto revert to non-file buffers (E.g. dired).
+  (setq global-auto-revert-non-file-buffers t)
 
   :hook
   (prog-mode . my/prog-mode-hook))
@@ -303,7 +307,8 @@
                                   "--function-arg-placeholders=1"
                                   "--completion-style=detailed"
                                   "--header-insertion=iwyu"
-                                  "--clang-tidy"))
+                                  "--clang-tidy"
+                                  "--malloc-trim"))
                                 ((java-mode java-ts-mode) .
                                  ("jdtls"))
                                 ((python-mode python-ts-mode) .
