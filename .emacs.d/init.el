@@ -101,9 +101,11 @@
                 (font (open-font entity 72.0 frame)))
       (font-get font :size)))
 
+  (defvar my/font-size-adjust 0.0 "Offset applies to font size")
+
   (defun my/frame-monitor-text-height (&optional frame)
     (let* ((dpi (my/frame-monitor-dpi frame))
-           (base 80))
+           (base (+ 80 my/font-size-adjust)))
       (round (* base (/ dpi (float (my/monitor-font-res frame)))))))
 
   (defun my/adjust-text-size-for-monitor (&optional frame)
