@@ -532,7 +532,9 @@
                        (window . main)
                        (window-width . 75)
                        (mode . magit-status-mode)))))
-  (magit-wip-mode +1))
+  (magit-wip-mode +1)
+  :bind
+  ("C-x G" . magit-status-here))
 
 
 (use-package magit-todos
