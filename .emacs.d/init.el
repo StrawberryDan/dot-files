@@ -156,20 +156,28 @@
   ;; Setup display buffer alist
   (setq display-buffer-alist
         `(((derived-mode . prog-mode) .
-           ((display-buffer-same-window display-buffer-reuse-mode-window) .
+           ((display-buffer-same-window display-buffer-use-least-recent-window) .
             ((mode . prog-mode))))
 
-          (my/help-buffer-p .
-           ((display-buffer-reuse-mode-window display-buffer-in-side-window) .
-                ((side . right) (slot . 0) (window-width . 75) (mode . ,my/help-buffer-list))))
+          (my/help-buffer-p . ((display-buffer-reuse-mode-window display-buffer-in-side-window) .
+                               ((side . right)
+                                (slot . 0)
+                                (window-width . 75)
+                                (preserve-size . (t . nil))
+                                (mode . ,my/help-buffer-list))))
 
-           ((derived-mode . compilation-mode) .
-            ((display-buffer-reuse-mode-window display-buffer-in-side-window) .
-             ((side . bottom) (slot . -1) (window-height . 12) (mode . compilation-mode))))
+          ((derived-mode . compilation-mode). ((display-buffer-in-side-window) .
+                                               ((side . bottom)
+                                                (slot . -1)
+                                                (window-height . 12)
+                                                (preserve-size (nil . t))
+                                                (mode . compilation-mode))))
 
-           ("\\*xref\\*" .
-            ((display-buffer-in-side-window) . ((side . right) (slot . 1))))
-           ))
+          (\\*xref\\* . ((display-buffer-in-side-window) .
+                           ((side . right)
+                            (window-width . 75)
+                            (preserve-size (t . nil))
+                            (slot . 1))))))
 
   ;; Setup cache directories
   (let* ((cache-dir (expand-file-name "emacs/" (or (getenv "XDG_CACHE_HOME") "~/.cache")))
@@ -574,7 +582,14 @@
                     . ((direction . left)
                        (window . main)
                        (window-width . 75)
+                       (preserve-size . (t . nil))
                        (mode . magit-status-mode)))))
+  (add-to-list 'display-buffer-alist
+               '((derived-mode . magit-log-mode)
+                 . ((display-buffer-use-least-recent-window) . ())))
+  (add-to-list 'display-buffer-alist
+               '((derived-mode . magit-revision-mode)
+                 . ((display-buffer-use-least-recent-window) . ())))
   (magit-wip-mode +1)
   :bind
   ("C-x G" . magit-status-here))
@@ -587,8 +602,7 @@
   :config
   (add-to-list 'display-buffer-alist
                '((derived-mode . magit-todos-list-mode) .
-                 ((display-buffer-reuse-mode-window display-buffer-in-side-window) .
-                  ((side . left) (slot . 1) (window-width . 75) (mode . magit-todos-list-mode))))))
+                 ((display-buffer-use-least-recent-window) .()))))
 
 
 (use-package diff-hl
