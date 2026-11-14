@@ -230,6 +230,28 @@
   (prog-mode . my/prog-mode-hook))
 
 
+(defun my/blend-colors (c1 c2 a)
+  (let* ((hsl1 (apply #'color-rgb-to-hsl (color-name-to-rgb c1)))
+         (hsl2 (apply #'color-rgb-to-hsl (color-name-to-rgb c2)))
+         (blended (cl-mapcar (lambda (x y) (+ (* x (- 1.0 a))
+                                              (* y a)))
+                             hsl1 hsl2)))
+    (apply #'color-rgb-to-hex (append (apply #'color-hsl-to-rgb blended) '(2)))))
+
+(defvar my/whitespace-color-blending 0.66
+  "Blending factor with which to blend \
+   the foreground and the background color applied to whitespace faces")
+
+(defun my/correct-whitespace-colors ()
+  (interactive)
+  (let* ((fg (face-foreground 'default))
+         (bg (face-background 'default))
+         (fg2 (my/blend-colors fg bg my/whitespace-color-blending)))
+    (custom-theme-set-faces 'user
+                            `(whitespace-space   ((t . (:foreground ,fg2 :inherit default))) t "Match default")
+                            `(whitespace-tab     ((t . (:foreground ,fg2 :inherit default))) t "Match default")
+                            `(whitespace-newline ((t . (:foreground ,fg2 :inherit default))) t "Match default"))))
+
 (use-package whitespace
   :ensure nil
   :demand t
@@ -237,6 +259,7 @@
   ;; Whitespace styling
   (setq whitespace-line-column 80
         whitespace-style '(face trailing tabs spaces lines-char newline space-mark tab-mark newline-mark))
+
   :hook
   ( (prog-mode . whitespace-mode) ))
 
@@ -620,6 +643,12 @@
   :hook
   ((eat-mode . my/eat-mode-hook)))
 
+
+;;==========================================================
+;; Late configuration
+;;==========================================================
+(with-eval-after-load 'whitespace
+  (my/correct-whitespace-colors))
 
 
 ;;==========================================================
