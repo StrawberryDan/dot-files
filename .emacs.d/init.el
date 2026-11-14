@@ -59,13 +59,23 @@
     "<left>"  (lambda () (interactive) (window-resize (selected-window) -1   t))
     "<right>" (lambda () (interactive) (window-resize (selected-window) +1   t))
     "<up>"    (lambda () (interactive) (window-resize (selected-window) +1 nil))
-    "<down>"  (lambda () (interactive) (window-resize (selected-window) -1 nil)))
+    "<down>"  (lambda () (interactive) (window-resize (selected-window) -1 nil))
+    "S-<left>"  (lambda () (interactive) (window-resize (selected-window) -5   t))
+    "S-<right>" (lambda () (interactive) (window-resize (selected-window) +5   t))
+    "S-<up>"    (lambda () (interactive) (window-resize (selected-window) +5 nil))
+    "S-<down>"  (lambda () (interactive) (window-resize (selected-window) -5 nil))
+    "C-S-<left>"  (lambda () (interactive) (window-resize (selected-window) -20   t))
+    "C-S-<right>" (lambda () (interactive) (window-resize (selected-window) +20   t))
+    "C-S-<up>"    (lambda () (interactive) (window-resize (selected-window) +20 nil))
+    "C-S-<down>"  (lambda () (interactive) (window-resize (selected-window) -20 nil))
+    "e"           (lambda () (interactive) (setq my/font-size-adjust (+ my/font-size-adjust +5)) (my/adjust-text-size-for-monitor) (message "%s" my/font-size-adjust))
+    "d"           (lambda () (interactive) (setq my/font-size-adjust (+ my/font-size-adjust -5)) (my/adjust-text-size-for-monitor) (message "%s" my/font-size-adjust)))
   (defvar-keymap my/window-map
     :name "Window Map"
     :prefix t
     :doc "Windowing Commands"
     "t" #'tab-window-detach
-    "r" #'my/window-resize-keymap)
+    "r" (lambda () (interactive) (set-transient-map my/window-resize-keymap t)))
   (keymap-global-set "C-c w" my/window-map)
 
   :init
@@ -120,7 +130,8 @@
                               `(default ((t . (:font ,(font-xlfd-name found-font))))))
     (warn "Failed to find any of the prefered fonts (%s)!" font-list))
 
-
+  ;; Adjust font size straight away
+  (my/adjust-text-size-for-monitor)
   ;; Adjust whenever a new frame is made
   (add-hook 'after-make-frame-functions #'my/adjust-text-size-for-monitor)
   ;; Adjust every time frame moves
