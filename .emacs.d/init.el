@@ -68,8 +68,14 @@
     "C-S-<right>" (lambda () (interactive) (window-resize (selected-window) +20   t))
     "C-S-<up>"    (lambda () (interactive) (window-resize (selected-window) +20 nil))
     "C-S-<down>"  (lambda () (interactive) (window-resize (selected-window) -20 nil))
-    "e"           (lambda () (interactive) (setq my/font-size-adjust (+ my/font-size-adjust +5)) (my/adjust-text-size-for-monitor) (message "%s" my/font-size-adjust))
-    "d"           (lambda () (interactive) (setq my/font-size-adjust (+ my/font-size-adjust -5)) (my/adjust-text-size-for-monitor) (message "%s" my/font-size-adjust)))
+    "e"           (lambda () (interactive)
+                    (setq my/font-size-adjust (+ my/font-size-adjust +5))
+                    (my/adjust-text-size-for-monitor)
+                    (message "Font Size Adjust: %s" my/font-size-adjust))
+    "d"           (lambda () (interactive)
+                    (setq my/font-size-adjust (+ my/font-size-adjust -5))
+                    (my/adjust-text-size-for-monitor)
+                    (message "Font Size Adjust: %s" my/font-size-adjust)))
   (defvar-keymap my/window-map
     :name "Window Map"
     :prefix t
