@@ -98,6 +98,9 @@
   (unless package-archive-contents
     (package-refresh-contents))
 
+  ;; Disable the bell
+  (setq ring-bell-function 'ignore)
+
   (defun my/frame-monitor-dpi (&optional frame)
     (when-let* ((frame    (or frame (selected-frame)))
                 (attrs    (frame-monitor-attributes))
