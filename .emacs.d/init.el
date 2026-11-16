@@ -205,13 +205,11 @@
 
 
   ;; Use preferred cursor type
-  (setq-default cursor-type '(hbar . 4))
+  (setq-default cursor-type 'box)
   ;; Stop cursor blinks from stopping
   (setq blink-cursor-blinks 0)
   ;; Have a longer time before the cursor starts blinking.
   (setopt blink-cursor-delay 2.0)
-  ;; Cursor blinking switches between normal and box mode.
-  (setq blink-cursor-alist `((,cursor-type . box)))
   ;; Stop cursor from displaying in non selected windows
   (setq-default cursor-in-non-selected-windows 'box)
 
