@@ -581,6 +581,7 @@
                        (window . main)
                        (window-width . 75)
                        (preserve-size . (t . nil))
+                       (dedicated . t)
                        (mode . magit-status-mode)))))
   (add-to-list 'display-buffer-alist
                '((derived-mode . magit-log-mode)
