@@ -173,7 +173,7 @@
                                                 (preserve-size (nil . t))
                                                 (mode . compilation-mode))))
 
-          (\\*xref\\* . ((display-buffer-in-side-window) .
+          ("\\*xref\\*" . ((display-buffer-in-side-window) .
                            ((side . right)
                             (window-width . 75)
                             (preserve-size (t . nil))
