@@ -59,13 +59,29 @@
     "<left>"  (lambda () (interactive) (window-resize (selected-window) -1   t))
     "<right>" (lambda () (interactive) (window-resize (selected-window) +1   t))
     "<up>"    (lambda () (interactive) (window-resize (selected-window) +1 nil))
-    "<down>"  (lambda () (interactive) (window-resize (selected-window) -1 nil)))
+    "<down>"  (lambda () (interactive) (window-resize (selected-window) -1 nil))
+    "S-<left>"  (lambda () (interactive) (window-resize (selected-window) -5   t))
+    "S-<right>" (lambda () (interactive) (window-resize (selected-window) +5   t))
+    "S-<up>"    (lambda () (interactive) (window-resize (selected-window) +5 nil))
+    "S-<down>"  (lambda () (interactive) (window-resize (selected-window) -5 nil))
+    "C-S-<left>"  (lambda () (interactive) (window-resize (selected-window) -20   t))
+    "C-S-<right>" (lambda () (interactive) (window-resize (selected-window) +20   t))
+    "C-S-<up>"    (lambda () (interactive) (window-resize (selected-window) +20 nil))
+    "C-S-<down>"  (lambda () (interactive) (window-resize (selected-window) -20 nil))
+    "e"           (lambda () (interactive)
+                    (setq my/font-size-adjust (+ my/font-size-adjust +5))
+                    (my/adjust-text-size-for-monitor)
+                    (message "Font Size Adjust: %s" my/font-size-adjust))
+    "d"           (lambda () (interactive)
+                    (setq my/font-size-adjust (+ my/font-size-adjust -5))
+                    (my/adjust-text-size-for-monitor)
+                    (message "Font Size Adjust: %s" my/font-size-adjust)))
   (defvar-keymap my/window-map
     :name "Window Map"
     :prefix t
     :doc "Windowing Commands"
     "t" #'tab-window-detach
-    "r" #'my/window-resize-keymap)
+    "r" (lambda () (interactive) (set-transient-map my/window-resize-keymap t)))
   (keymap-global-set "C-c w" my/window-map)
 
   :init
@@ -88,6 +104,9 @@
   (unless package-archive-contents
     (package-refresh-contents))
 
+  ;; Disable the bell
+  (setq ring-bell-function 'ignore)
+
   (defun my/frame-monitor-dpi (&optional frame)
     (when-let* ((frame    (or frame (selected-frame)))
                 (attrs    (frame-monitor-attributes))
@@ -101,9 +120,11 @@
                 (font (open-font entity 72.0 frame)))
       (font-get font :size)))
 
+  (defvar my/font-size-adjust 0.0 "Offset applies to font size")
+
   (defun my/frame-monitor-text-height (&optional frame)
     (let* ((dpi (my/frame-monitor-dpi frame))
-           (base 80))
+           (base (+ 80 my/font-size-adjust)))
       (round (* base (/ dpi (float (my/monitor-font-res frame)))))))
 
   (defun my/adjust-text-size-for-monitor (&optional frame)
@@ -118,7 +139,8 @@
                               `(default ((t . (:font ,(font-xlfd-name found-font))))))
     (warn "Failed to find any of the prefered fonts (%s)!" font-list))
 
-
+  ;; Adjust font size straight away
+  (my/adjust-text-size-for-monitor)
   ;; Adjust whenever a new frame is made
   (add-hook 'after-make-frame-functions #'my/adjust-text-size-for-monitor)
   ;; Adjust every time frame moves
@@ -134,20 +156,28 @@
   ;; Setup display buffer alist
   (setq display-buffer-alist
         `(((derived-mode . prog-mode) .
-           ((display-buffer-same-window display-buffer-reuse-mode-window) .
+           ((display-buffer-same-window display-buffer-use-least-recent-window) .
             ((mode . prog-mode))))
 
-          (my/help-buffer-p .
-           ((display-buffer-reuse-mode-window display-buffer-in-side-window) .
-                ((side . right) (slot . 0) (window-width . 75) (mode . ,my/help-buffer-list))))
+          (my/help-buffer-p . ((display-buffer-reuse-mode-window display-buffer-in-side-window) .
+                               ((side . right)
+                                (slot . 0)
+                                (window-width . 75)
+                                (preserve-size . (t . nil))
+                                (mode . ,my/help-buffer-list))))
 
-           ((derived-mode . compilation-mode) .
-            ((display-buffer-reuse-mode-window display-buffer-in-side-window) .
-             ((side . bottom) (slot . -1) (window-height . 12) (mode . compilation-mode))))
+          ((derived-mode . compilation-mode). ((display-buffer-in-side-window) .
+                                               ((side . bottom)
+                                                (slot . -1)
+                                                (window-height . 12)
+                                                (preserve-size (nil . t))
+                                                (mode . compilation-mode))))
 
-           ("\\*xref\\*" .
-            ((display-buffer-in-side-window) . ((side . right) (slot . 1))))
-           ))
+          (\\*xref\\* . ((display-buffer-in-side-window) .
+                           ((side . right)
+                            (window-width . 75)
+                            (preserve-size (t . nil))
+                            (slot . 1))))))
 
   ;; Setup cache directories
   (let* ((cache-dir (expand-file-name "emacs/" (or (getenv "XDG_CACHE_HOME") "~/.cache")))
@@ -208,6 +238,28 @@
   (prog-mode . my/prog-mode-hook))
 
 
+(defun my/blend-colors (c1 c2 a)
+  (let* ((hsl1 (apply #'color-rgb-to-hsl (color-name-to-rgb c1)))
+         (hsl2 (apply #'color-rgb-to-hsl (color-name-to-rgb c2)))
+         (blended (cl-mapcar (lambda (x y) (+ (* x (- 1.0 a))
+                                              (* y a)))
+                             hsl1 hsl2)))
+    (apply #'color-rgb-to-hex (append (apply #'color-hsl-to-rgb blended) '(2)))))
+
+(defvar my/whitespace-color-blending 0.66
+  "Blending factor with which to blend \
+   the foreground and the background color applied to whitespace faces")
+
+(defun my/correct-whitespace-colors ()
+  (interactive)
+  (let* ((fg (face-foreground 'default))
+         (bg (face-background 'default))
+         (fg2 (my/blend-colors fg bg my/whitespace-color-blending)))
+    (custom-theme-set-faces 'user
+                            `(whitespace-space   ((t . (:foreground ,fg2 :inherit default))) t "Match default")
+                            `(whitespace-tab     ((t . (:foreground ,fg2 :inherit default))) t "Match default")
+                            `(whitespace-newline ((t . (:foreground ,fg2 :inherit default))) t "Match default"))))
+
 (use-package whitespace
   :ensure nil
   :demand t
@@ -215,6 +267,7 @@
   ;; Whitespace styling
   (setq whitespace-line-column 80
         whitespace-style '(face trailing tabs spaces lines-char newline space-mark tab-mark newline-mark))
+
   :hook
   ( (prog-mode . whitespace-mode) ))
 
@@ -529,8 +582,17 @@
                     . ((direction . left)
                        (window . main)
                        (window-width . 75)
+                       (preserve-size . (t . nil))
                        (mode . magit-status-mode)))))
-  (magit-wip-mode +1))
+  (add-to-list 'display-buffer-alist
+               '((derived-mode . magit-log-mode)
+                 . ((display-buffer-use-least-recent-window) . ())))
+  (add-to-list 'display-buffer-alist
+               '((derived-mode . magit-revision-mode)
+                 . ((display-buffer-use-least-recent-window) . ())))
+  (magit-wip-mode +1)
+  :bind
+  ("C-x G" . magit-status-here))
 
 
 (use-package magit-todos
@@ -540,8 +602,7 @@
   :config
   (add-to-list 'display-buffer-alist
                '((derived-mode . magit-todos-list-mode) .
-                 ((display-buffer-reuse-mode-window display-buffer-in-side-window) .
-                  ((side . left) (slot . 1) (window-width . 75) (mode . magit-todos-list-mode))))))
+                 ((display-buffer-use-least-recent-window) .()))))
 
 
 (use-package diff-hl
@@ -596,3 +657,15 @@
   :hook
   ((eat-mode . my/eat-mode-hook)))
 
+
+;;==========================================================
+;; Late configuration
+;;==========================================================
+(with-eval-after-load 'whitespace
+  (my/correct-whitespace-colors))
+
+
+;;==========================================================
+;; Local File
+;;==========================================================
+(load (locate-user-emacs-file "local.el") t nil)
