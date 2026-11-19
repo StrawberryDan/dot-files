@@ -81,7 +81,7 @@
     :prefix t
     :doc "Windowing Commands"
     "t" #'tab-window-detach
-    "r" (lambda () (interactive) (set-transient-map my/window-resize-keymap t)))
+    "r" (lambda () (interactive) (set-transient-map my/window-resize-keymap t nil "Window Resize Map" 2.0)))
   (keymap-global-set "C-c w" my/window-map)
 
   :init
@@ -422,6 +422,11 @@
     (require 'ace-window)
     (aw-select "Ace - Move Window"
                #'aw-move-window))
+  (defun my/ace-copy-window ()
+    (interactive)
+    (require 'ace-window)
+    (aw-select "Ace - Copy Window"
+               #'aw-copy-window))
   :config
   (setq aw-dispatch-always t
         aw-keys '(?a ?s ?d ?f ?j ?k ?l ?q ?w ?e ?r ?t ?y ?u ?i ?o ?p)
@@ -435,7 +440,7 @@
     ("w" . ace-select-window)
     ("m" . my/ace-move-window)
     ("M" . ace-swap-window)
-    ("c" . ace-copy-window)
+    ("c" . my/ace-copy-window)
     ("k" . ace-delete-window)
     ("K" . ace-delete-other-windows)))
 
@@ -471,6 +476,8 @@
 
 (use-package affe
   :ensure t
+  :config
+  (setopt affe-count 200)
   :bind
   ( :map my/find-map
     ("f" . affe-find)
@@ -499,6 +506,12 @@
     ("M-n" . mc/mark-next-symbol-like-this)))
 
 
+(use-package vundo
+  :ensure t
+  :demand t
+  :bind
+  ("C-c z" . vundo))
+
 ;;==========================================================
 ;; Appearence
 ;;==========================================================
@@ -518,7 +531,7 @@
 
 
 ;;==========================================================
-;; Competion
+;; Completion
 ;;==========================================================
 (use-package vertico
   :ensure t
@@ -650,6 +663,8 @@
         (unless (zerop (call-process "tic" nil nil nil "-x" "-o"
                                      my/eat-terminfo-directory source))
           (message "eat: failed to compile terminfo from %s" source)))))
+  :config
+  (setq eat-term-scrollback-size (* 32 1024 1024))
   (when (eq system-type 'darwin)
     (my/eat-compile-terminfo)
     (setq eat-term-terminfo-directory my/eat-terminfo-directory))
