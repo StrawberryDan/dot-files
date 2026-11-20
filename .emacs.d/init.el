@@ -366,6 +366,12 @@
                                  ("rass" "python"))))
   ;; Disable on type formatting
   (setq eglot-ignored-server-capabilities '(:documentOnTypeFormattingProvider))
+
+  ;; Give the eglot hightlight symbol face a much more distinct look
+  (custom-theme-set-faces 'user
+                          '(eglot-highlight-symbol-face ((t . ( :foreground "#FF0000"
+                                                                :background "#FFFFFF"
+                                                                :inherit bold)))))
   :hook
   (( c-mode c-ts-mode
      c++-mode c++-ts-mode
