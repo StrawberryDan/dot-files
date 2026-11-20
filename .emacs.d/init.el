@@ -372,6 +372,14 @@
                           '(eglot-highlight-symbol-face ((t . ( :foreground "#FF0000"
                                                                 :background "#FFFFFF"
                                                                 :inherit bold)))))
+  ;; Put hierarchy modes in a side window
+  (add-to-list 'display-buffer-alist
+               '((derived-mode . eglot-hierarchy-mode)
+                 . ((display-buffer-in-side-window)
+                    . ((side . right)
+                       (slot . 2)
+                       (window-width . 75)
+                       (preserve-size . (t . nil))))))
   :hook
   (( c-mode c-ts-mode
      c++-mode c++-ts-mode
@@ -383,7 +391,11 @@
   :bind
   ( :map my/code-map
     ("a" . eglot-code-actions)
-    ("r" . eglot-rename))
+    ("r" . eglot-rename)
+    ("c" . (lambda () (interactive) (eglot-show-call-hierarchy 'base)))
+    ("C" . (lambda () (interactive) (eglot-show-call-hierarchy 'incoming)))
+    ("t" . (lambda () (interactive) (eglot-show-type-hierarchy 'base)))
+    ("T" . (lambda () (interactive) (eglot-show-type-hierarchy 'derived))))
   ( :map my/find-map
     ("i" . eglot-find-implementation)))
 
